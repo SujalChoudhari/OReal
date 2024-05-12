@@ -1,12 +1,14 @@
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import filedialog
-from src.screen_recorder import ScreenRecorder
 from threading import Thread
 import subprocess
-from src.constants import APP_NAME
+from src.constants import APP_NAME, OREAL_OUTPUT_DIR
+from src.encoder import Encoder
 from PIL import Image
 import time
+
+from src.screen_recorder import ScreenRecorder
 
 
 class ScreenRecorderGUI:
@@ -87,6 +89,17 @@ class ScreenRecorderGUI:
             row=5, column=0, columnspan=2, sticky="ew", padx=20, pady=(0, 20)
         )
 
+        self.compress_button = ctk.CTkButton(
+            self.main_frame,
+            text="Compress",
+            command=self.compress,
+            font=("Arial", 14),
+        )
+        self.compress_button.configure(state="disabled")
+        self.compress_button.grid(
+            row=6, column=0, columnspan=2, sticky="ew", padx=20, pady=(0, 20)
+        )
+
     def toggle_record(self):
         def start_recording_after(i):
             if i > 0:
@@ -101,6 +114,7 @@ class ScreenRecorderGUI:
 
         if not self.recording:
             start_recording_after(3)  # Start the countdown to record
+            self.compress_button.configure(state="disabled")
         else:
             self.tk_recording_frame.configure(text="")
             self.screen_recorder.stop_recording()
@@ -109,6 +123,7 @@ class ScreenRecorderGUI:
                 print("Recording stopped.")
             self.recording = False
             self.record_button.configure(text="Record")
+            self.compress_button.configure(state="normal")
 
     def recording_thread(self):
         filename = self.name_entry.get() if self.name_entry.get() else "new_file"
@@ -127,3 +142,13 @@ class ScreenRecorderGUI:
 
         # Start video replay in a subprocess
         subprocess.Popen(["ffplay", "-autoexit", video_file])
+
+    def compress(self):
+        def reset_compress_button():
+            self.compress_button.configure(text="Compress")
+
+        filename = self.name_entry.get() if self.name_entry.get() else "new_file"
+        encoder = Encoder(OREAL_OUTPUT_DIR + filename)
+        encoder.encode()
+        self.compress_button.configure(state="disabled", text="Done")
+        self.master.after(1000, reset_compress_button)

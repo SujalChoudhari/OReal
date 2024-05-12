@@ -11,7 +11,7 @@ from PIL import Image
 
 from src.cursor_renderer import CursorRenderer
 from src.mouse_event_recorder import MouseEventRecorder
-from src.constants import OREAL_DEFAULT_VIDEO_EXT
+from src.constants import OREAL_DEFAULT_VIDEO_EXT, OREAL_OUTPUT_DIR
 
 
 class ScreenRecorder:
@@ -36,7 +36,9 @@ class ScreenRecorder:
         record_audio: bool = False,
         tk_frame: tk.Frame = None,
     ):
-        self.output_file_name = out_file_name + "." + OREAL_DEFAULT_VIDEO_EXT
+        self.output_file_name = (
+            OREAL_OUTPUT_DIR + out_file_name + "." + OREAL_DEFAULT_VIDEO_EXT
+        )
         self.output_video = cv2.VideoWriter(
             self.output_file_name,
             self.fourcc,
@@ -44,7 +46,7 @@ class ScreenRecorder:
             (self.screen_width, self.screen_height),
         )
         self.record_audio = record_audio
-        self.audio_filename = out_file_name + ".wav"
+        self.audio_filename = OREAL_OUTPUT_DIR + out_file_name + ".wav"
         self.is_recording = True
         self.tk_frame = tk_frame
 
