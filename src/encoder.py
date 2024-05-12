@@ -1,14 +1,29 @@
 import os
+import wave
 
 from src.constants import (
     OREAL_COMPLETE_AVI_FILE_EXT,
     OREAL_DEFAULT_VIDEO_EXT,
     OREAL_MOUSE_EVENT_EXT,
     OREAL_COMPLETE_FILE_HEADER,
+    OREAL_DEFAULT_AUDIO_EXT,
 )
 
 
 class Encoder:
+    """
+    Proposed Header format:
+    - OREAL
+    - [VideoPresenter] 1b (0 = not present, 1 = present) 
+    - [EventPresent] 1b (0 = not present, 1 = present)
+    - [AudioPresent] 1b (0 = not present, 1 = present)  
+    
+    only present if [AudioPresent] == 1
+    - [AudioChannel] 1b (1 = mono, 2 = stereo)
+    - [AudioSampleRate] 4b (22050 = 22050 Hz, 44100 = 44100 Hz)
+    - [AudioSampleWidth] 1b (1 = 8-bit, 2 = 16-bit)
+    """
+
     def __init__(self, file_path):
         self.file_path = file_path + "." + OREAL_DEFAULT_VIDEO_EXT
 
@@ -16,8 +31,11 @@ class Encoder:
         # Extract directory and base name from the file path
         directory, base_name = os.path.split(self.file_path)
 
-        # Construct the paths for .avi and .orip files
+        # Construct the paths for .avi, .wav, and .orip files
         avi_file_path = self.file_path
+        audio_file_path = self.file_path.replace(
+            f".{OREAL_DEFAULT_VIDEO_EXT}", "." + OREAL_DEFAULT_AUDIO_EXT
+        )
         oreal_mouse_events_file_path = os.path.join(
             directory, os.path.splitext(base_name)[0] + "." + OREAL_MOUSE_EVENT_EXT
         )
@@ -32,7 +50,11 @@ class Encoder:
             # Open files for reading and writing
             with open(avi_file_path, "rb") as avi_file, open(
                 oreal_mouse_events_file_path, "rb"
-            ) as oreal_mouse_event_file, open(merged_file_path, "wb") as merged_file:
+            ) as oreal_mouse_event_file, wave.open(
+                audio_file_path, "rb"
+            ) as audio_file, open(
+                merged_file_path, "wb"
+            ) as merged_file:
                 # Write OREAL header
                 merged_file.write(OREAL_COMPLETE_FILE_HEADER.encode("ascii"))
 
@@ -46,6 +68,12 @@ class Encoder:
                 # Write OREAL_MOUSE_EVENT content
                 for line in oreal_mouse_event_file:
                     merged_file.write(line)
+
+                # Write separator
+                merged_file.write(b"\nAUDIO_START\n")
+
+                # Write audio content
+                merged_file.write(audio_file.readframes(audio_file.getnframes()))
 
             return merged_file_path
         except FileNotFoundError as e:
@@ -67,6 +95,9 @@ class Encoder:
         decoded_oreal_mouse_events_file_path = os.path.join(
             directory, f"{os.path.splitext(base_name)[0]}.{OREAL_MOUSE_EVENT_EXT}"
         )
+        decoded_audio_file_path = os.path.join(
+            directory, f"{os.path.splitext(base_name)[0]}.wav"
+        )
 
         try:
             # Open the merged file for reading
@@ -77,24 +108,43 @@ class Encoder:
                     print("Invalid encoded file format.")
                     return None
 
-                # Initialize flag to indicate when to switch to OREAL_MOUSE_EVENT content
+                # Initialize flags to indicate when to switch to OREAL_MOUSE_EVENT and audio content
                 events_started = False
+                audio_started = False
 
                 # Open files for writing decoded content
                 with open(decoded_avi_file_path, "wb") as avi_file, open(
                     decoded_oreal_mouse_events_file_path, "wb"
-                ) as oreal_mouse_event_file:
-                    # Read merged content and write to appropriate files
-                    for line in merged_file:
+                ) as oreal_mouse_event_file, wave.open(
+                    decoded_audio_file_path, "wb"
+                ) as audio_file:
+                    # Set audio parameters
+                    audio_file.setnchannels(2)  # Assuming stereo audio
+                    audio_file.setsampwidth(2)  # 2 bytes per sample (16-bit)
+                    audio_file.setframerate(44100)  # Sample rate of 44.1 kHz
+
+                    while True:
+                        line = merged_file.readline()
+                        if not line:
+                            break
                         if line.strip() == b"EVENTS_START":
                             events_started = True
                             continue
+                        elif line.strip() == b"AUDIO_START":
+                            audio_started = True
+                            continue
                         if not events_started:
                             avi_file.write(line)
-                        else:
+                        elif not audio_started:
                             oreal_mouse_event_file.write(line)
+                        else:
+                            audio_file.writeframes(line)
 
-            return decoded_avi_file_path, decoded_oreal_mouse_events_file_path
+            return (
+                decoded_avi_file_path,
+                decoded_oreal_mouse_events_file_path,
+                decoded_audio_file_path,
+            )
         except FileNotFoundError as e:
             print("File not found.", e)
             return None

@@ -8,8 +8,11 @@ OUT_DIR = "output/"
 # cursor_renderer = CursorRenderer("assets/cursor.png")
 # mouse_event_recorder = MouseEventRecorder()
 # screen_recorder = ScreenRecorder(
-#     OUT_DIR + "new_file", cursor_renderer, mouse_event_recorder
+#     OUT_DIR + "new_file", 
+#     cursor_renderer, 
+#     mouse_event_recorder
 # )
+# screen_recorder.set_record_audio(True)
 # screen_recorder.record_screen()
 
 compressor = Encoder(OUT_DIR + "new_file")
