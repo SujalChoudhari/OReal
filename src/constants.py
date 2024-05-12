@@ -5,4 +5,6 @@ OREAL_DEFAULT_AUDIO_EXT = "wav"
 OREAL_COMPLETE_FILE_HEADER = "OREAL"
 OREAL_OUTPUT_DIR = "output/"
 
-APP_NAME = "OReal"
+OREAL_APP_NAME = "OReal"
+OREAL_APP_DESCRIPTION = "OReal is a tool for recording top notch Video Tutorials."
+OREAL_FEED_WEB_PAGE = "https://www.example.com"

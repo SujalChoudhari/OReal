@@ -50,9 +50,7 @@ class Encoder:
             # Open files for reading and writing
             with open(avi_file_path, "rb") as avi_file, open(
                 oreal_mouse_events_file_path, "rb"
-            ) as oreal_mouse_event_file, wave.open(
-                audio_file_path, "rb"
-            ) as audio_file, open(
+            ) as oreal_mouse_event_file, open(
                 merged_file_path, "wb"
             ) as merged_file:
                 # Write OREAL header
@@ -69,11 +67,14 @@ class Encoder:
                 for line in oreal_mouse_event_file:
                     merged_file.write(line)
 
-                # Write separator
-                merged_file.write(b"\nAUDIO_START\n")
+                # Check if WAV file exists
+                if os.path.exists(audio_file_path):
+                    # Write separator
+                    merged_file.write(b"\nAUDIO_START\n")
 
-                # Write audio content
-                merged_file.write(audio_file.readframes(audio_file.getnframes()))
+                    # Open and write audio content
+                    with wave.open(audio_file_path, "rb") as audio_file:
+                        merged_file.write(audio_file.readframes(audio_file.getnframes()))
 
             return merged_file_path
         except FileNotFoundError as e:
@@ -115,14 +116,10 @@ class Encoder:
                 # Open files for writing decoded content
                 with open(decoded_avi_file_path, "wb") as avi_file, open(
                     decoded_oreal_mouse_events_file_path, "wb"
-                ) as oreal_mouse_event_file, wave.open(
-                    decoded_audio_file_path, "wb"
-                ) as audio_file:
-                    # Set audio parameters
-                    audio_file.setnchannels(2)  # Assuming stereo audio
-                    audio_file.setsampwidth(2)  # 2 bytes per sample (16-bit)
-                    audio_file.setframerate(44100)  # Sample rate of 44.1 kHz
-
+                ) as oreal_mouse_event_file:
+                    # Set audio parameters if audio content exists
+                    audio_content_pos = None
+                    audio_file = None
                     while True:
                         line = merged_file.readline()
                         if not line:
@@ -132,18 +129,28 @@ class Encoder:
                             continue
                         elif line.strip() == b"AUDIO_START":
                             audio_started = True
+                            # Set the position of audio content start
+                            audio_content_pos = merged_file.tell()
                             continue
                         if not events_started:
                             avi_file.write(line)
                         elif not audio_started:
                             oreal_mouse_event_file.write(line)
-                        else:
-                            audio_file.writeframes(line)
+                        elif audio_started and audio_content_pos is not None:
+                            # Open and write audio content if it exists
+                            if audio_file is None:
+                                audio_file = wave.open(decoded_audio_file_path, "wb")
+                                audio_file.setnchannels(2)  # Assuming stereo audio
+                                audio_file.setsampwidth(2)  # 2 bytes per sample (16-bit)
+                                audio_file.setframerate(44100)  # Sample rate of 44.1 kHz
+                            merged_file.seek(audio_content_pos)
+                            audio_file.writeframes(merged_file.read())
+                            break  # No need to read further after writing audio content
 
             return (
                 decoded_avi_file_path,
                 decoded_oreal_mouse_events_file_path,
-                decoded_audio_file_path,
+                decoded_audio_file_path if audio_content_pos is not None else None,
             )
         except FileNotFoundError as e:
             print("File not found.", e)

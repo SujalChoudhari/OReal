@@ -3,7 +3,7 @@ import tkinter as tk
 from tkinter import filedialog
 from threading import Thread
 import subprocess
-from src.constants import APP_NAME, OREAL_OUTPUT_DIR
+from src.constants import OREAL_APP_NAME, OREAL_OUTPUT_DIR
 from src.encoder import Encoder
 from PIL import Image
 import time
@@ -13,16 +13,17 @@ from src.screen_recorder import ScreenRecorder
 
 class ScreenRecorderGUI:
     def __init__(self, master: ctk.CTk, screen_recorder: ScreenRecorder):
-        self.master = master
+        self.main = master
+        self.master = ctk.CTkToplevel(self.main)
         self.screen_recorder = screen_recorder
         self.recording = False
         self.playing = False
-        master.title(APP_NAME)
-        master.resizable(False, False)
+        self.master.title(f"{OREAL_APP_NAME} | Recorder")
+        self.master.resizable(False, False)
         self.max_live_preview_size = screen_recorder.max_size
 
         # Outer Frame
-        self.outer_frame = ctk.CTkFrame(master)
+        self.outer_frame = ctk.CTkFrame(self.master)
         self.outer_frame.pack()
 
         # Create a frame for better organization
@@ -31,7 +32,7 @@ class ScreenRecorderGUI:
 
         # Add a title label
         self.title_label = ctk.CTkLabel(
-            self.main_frame, text=APP_NAME, font=("Arial", 24, "bold")
+            self.main_frame, text=OREAL_APP_NAME, font=("Arial", 24, "bold")
         )
         self.title_label.grid(row=0, column=0, columnspan=2, pady=(10, 10))
 
@@ -91,7 +92,7 @@ class ScreenRecorderGUI:
 
         self.compress_button = ctk.CTkButton(
             self.main_frame,
-            text="Compress",
+            text="Compile",
             command=self.compress,
             font=("Arial", 14),
         )
@@ -133,8 +134,8 @@ class ScreenRecorderGUI:
 
     def replay(self):
         filename = self.name_entry.get() if self.name_entry.get() else "new_file"
-        video_file = f"{filename}.avi"
-        audio_file = f"{filename}.wav"
+        video_file = f"{OREAL_OUTPUT_DIR}{filename}.avi"
+        audio_file = f"{OREAL_OUTPUT_DIR}{filename}.wav"
 
         # If audio was recorded, play it
         if self.audio_var.get():
@@ -145,10 +146,10 @@ class ScreenRecorderGUI:
 
     def compress(self):
         def reset_compress_button():
-            self.compress_button.configure(text="Compress")
+            self.compress_button.configure(text="Compile")
 
         filename = self.name_entry.get() if self.name_entry.get() else "new_file"
         encoder = Encoder(OREAL_OUTPUT_DIR + filename)
         encoder.encode()
         self.compress_button.configure(state="disabled", text="Done")
-        self.master.after(1000, reset_compress_button)
+        self.master.after(2000, reset_compress_button)
