@@ -19,3 +19,12 @@ RECORDER_STOP_RECORDING_BUTTON_TEXT = "Stop Recording"
 RECORDER_REPLAY_BUTTON_TEXT = "Replay"
 RECORDER_SAVE_BUTTON_TEXT = "Save"
 
+APP_MULTIPLE_INSTANCE_OF_RECORDER_MESSAGE = (
+    "Recorder alreay open",
+    "Only one instance of recorder is allowed, close the previous one to start a new instance",
+)
+
+APP_MULTIPLE_INSTANCE_OF_VIDEO_EDITOR_MESSAGE = (
+    "Video editor alreay open",
+    "Only one instance of Video editor is allowed, close the previous one to start a new instance",
+)
