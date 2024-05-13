@@ -3,12 +3,12 @@ import tkinter as tk
 from tkinter import filedialog
 from threading import Thread
 import subprocess
-from src.constants import OREAL_APP_NAME, OREAL_OUTPUT_DIR
-from src.encoder import Encoder
+from src.constants import OREAL_APP_NAME, OREAL_WORKING_DIR
+from src.processors.encoder import Encoder
 from PIL import Image
 import time
 
-from src.screen_recorder import ScreenRecorder
+from src.processors.screen_recorder import ScreenRecorder
 
 
 class ScreenRecorderGUI:
@@ -134,8 +134,8 @@ class ScreenRecorderGUI:
 
     def replay(self):
         filename = self.name_entry.get() if self.name_entry.get() else "new_file"
-        video_file = f"{OREAL_OUTPUT_DIR}{filename}.avi"
-        audio_file = f"{OREAL_OUTPUT_DIR}{filename}.wav"
+        video_file = f"{OREAL_WORKING_DIR}{filename}.avi"
+        audio_file = f"{OREAL_WORKING_DIR}{filename}.wav"
 
         # If audio was recorded, play it
         if self.audio_var.get():
@@ -149,7 +149,7 @@ class ScreenRecorderGUI:
             self.compress_button.configure(text="Compile")
 
         filename = self.name_entry.get() if self.name_entry.get() else "new_file"
-        encoder = Encoder(OREAL_OUTPUT_DIR + filename)
+        encoder = Encoder(OREAL_WORKING_DIR + filename)
         encoder.encode()
         self.compress_button.configure(state="disabled", text="Done")
         self.master.after(2000, reset_compress_button)

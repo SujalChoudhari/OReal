@@ -1,6 +1,7 @@
 from pynput import mouse
 from src.constants import OREAL_MOUSE_EVENT_EXT
 
+
 class MouseEventRecorder:
     def __init__(self):
         self.mouse_positions = []  # modified by screen_recorder
@@ -41,7 +42,7 @@ class MouseEventRecorder:
         self.click_events.append(self.__current_unprocessed_event["click"])
         self.__current_unprocessed_event["click"] = False
 
-    def dump_events(self,filename:str):
+    def dump_events(self, filename: str):
         # Dump mouse positions and events to a file
         filename = filename.split(".")[0] + "." + OREAL_MOUSE_EVENT_EXT
         num_frames = len(self.mouse_positions)

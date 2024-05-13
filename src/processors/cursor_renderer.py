@@ -4,6 +4,7 @@ import datetime
 import numpy as np
 from PIL import Image
 
+
 class CursorRenderer:
     def __init__(self, cursor_image):
         self.cursor_image = cursor_image

@@ -14,10 +14,10 @@ class Encoder:
     """
     Proposed Header format:
     - OREAL
-    - [VideoPresenter] 1b (0 = not present, 1 = present) 
+    - [VideoPresenter] 1b (0 = not present, 1 = present)
     - [EventPresent] 1b (0 = not present, 1 = present)
-    - [AudioPresent] 1b (0 = not present, 1 = present)  
-    
+    - [AudioPresent] 1b (0 = not present, 1 = present)
+
     only present if [AudioPresent] == 1
     - [AudioChannel] 1b (1 = mono, 2 = stereo)
     - [AudioSampleRate] 4b (22050 = 22050 Hz, 44100 = 44100 Hz)
@@ -50,9 +50,7 @@ class Encoder:
             # Open files for reading and writing
             with open(avi_file_path, "rb") as avi_file, open(
                 oreal_mouse_events_file_path, "rb"
-            ) as oreal_mouse_event_file, open(
-                merged_file_path, "wb"
-            ) as merged_file:
+            ) as oreal_mouse_event_file, open(merged_file_path, "wb") as merged_file:
                 # Write OREAL header
                 merged_file.write(OREAL_COMPLETE_FILE_HEADER.encode("ascii"))
 
@@ -74,7 +72,9 @@ class Encoder:
 
                     # Open and write audio content
                     with wave.open(audio_file_path, "rb") as audio_file:
-                        merged_file.write(audio_file.readframes(audio_file.getnframes()))
+                        merged_file.write(
+                            audio_file.readframes(audio_file.getnframes())
+                        )
 
             return merged_file_path
         except FileNotFoundError as e:
@@ -141,8 +141,12 @@ class Encoder:
                             if audio_file is None:
                                 audio_file = wave.open(decoded_audio_file_path, "wb")
                                 audio_file.setnchannels(2)  # Assuming stereo audio
-                                audio_file.setsampwidth(2)  # 2 bytes per sample (16-bit)
-                                audio_file.setframerate(44100)  # Sample rate of 44.1 kHz
+                                audio_file.setsampwidth(
+                                    2
+                                )  # 2 bytes per sample (16-bit)
+                                audio_file.setframerate(
+                                    44100
+                                )  # Sample rate of 44.1 kHz
                             merged_file.seek(audio_content_pos)
                             audio_file.writeframes(merged_file.read())
                             break  # No need to read further after writing audio content

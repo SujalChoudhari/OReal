@@ -2,9 +2,9 @@ import tkinter as tk
 import customtkinter as ctk
 from tkinterweb import HtmlFrame
 
-from src.cursor_renderer import CursorRenderer
-from src.mouse_event_recorder import MouseEventRecorder
-from src.screen_recorder import ScreenRecorder
+from src.processors.cursor_renderer import CursorRenderer
+from src.processors.mouse_event_recorder import MouseEventRecorder
+from src.processors.screen_recorder import ScreenRecorder
 from src.constants import OREAL_APP_NAME, OREAL_APP_DESCRIPTION, OREAL_FEED_WEB_PAGE
 from src.gui.recorder import ScreenRecorderGUI
 from src.gui.editor import VideoEditor
