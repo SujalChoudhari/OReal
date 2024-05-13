@@ -59,10 +59,10 @@ class OrealApp:
         record_new_button.pack(side=tk.BOTTOM, padx=10, pady=10)
 
     def open_video_editor(self):
-        VideoEditor(master=self.master)
+        v = VideoEditor(master=self.master)
 
     def open_screen_recorder(self):
-        ScreenRecorderGUI(
+        s = ScreenRecorderGUI(
             self.master,
             ScreenRecorder(CursorRenderer("assets/cursor.png"), MouseEventRecorder()),
         )

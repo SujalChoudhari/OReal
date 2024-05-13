@@ -10,7 +10,7 @@ class VideoEditor:
         self.master = ctk.CTkToplevel(self.main)
         self.master.title(f"{OREAL_APP_NAME} | Video Editor")
         self.master.geometry("800x600")
-
+        self.master.focus()
         self.create_sidebar()
         self.create_preview_area()
         self.create_timeline()

@@ -2,7 +2,7 @@ import os
 import wave
 
 from src.constants import (
-    OREAL_COMPLETE_AVI_FILE_EXT,
+    OREAL_FILE_EXT,
     OREAL_DEFAULT_VIDEO_EXT,
     OREAL_MOUSE_EVENT_EXT,
     OREAL_COMPLETE_FILE_HEADER,
@@ -24,33 +24,28 @@ class Encoder:
     - [AudioSampleWidth] 1b (1 = 8-bit, 2 = 16-bit)
     """
 
-    def __init__(self, file_path):
-        self.file_path = file_path + "." + OREAL_DEFAULT_VIDEO_EXT
+    def __init__(self, file_path: str, output_file_path: str = None) -> None:
+        """Paths should be without extension"""
+        self.avi_file_path = file_path + "." + OREAL_DEFAULT_VIDEO_EXT
+        self.audio_file_path = file_path + "." + OREAL_DEFAULT_AUDIO_EXT
+        self.mouse_events_file_path = file_path + "." + OREAL_MOUSE_EVENT_EXT
+
+        if output_file_path is None:
+            self.output_file_path = file_path + "." + OREAL_FILE_EXT
+        else:
+            self.output_file_path = output_file_path + "." + OREAL_FILE_EXT
 
     def encode(self):
         # Extract directory and base name from the file path
-        directory, base_name = os.path.split(self.file_path)
-
-        # Construct the paths for .avi, .wav, and .orip files
-        avi_file_path = self.file_path
-        audio_file_path = self.file_path.replace(
-            f".{OREAL_DEFAULT_VIDEO_EXT}", "." + OREAL_DEFAULT_AUDIO_EXT
-        )
-        oreal_mouse_events_file_path = os.path.join(
-            directory, os.path.splitext(base_name)[0] + "." + OREAL_MOUSE_EVENT_EXT
-        )
+        directory, base_name = os.path.split(self.avi_file_path)
 
         try:
-            # Create the merged file path
-            merged_file_path = os.path.join(
-                directory,
-                f"{os.path.splitext(base_name)[0]}.{OREAL_COMPLETE_AVI_FILE_EXT}",
-            )
-
             # Open files for reading and writing
-            with open(avi_file_path, "rb") as avi_file, open(
-                oreal_mouse_events_file_path, "rb"
-            ) as oreal_mouse_event_file, open(merged_file_path, "wb") as merged_file:
+            with open(self.avi_file_path, "rb") as avi_file, open(
+                self.mouse_events_file_path, "rb"
+            ) as oreal_mouse_event_file, open(
+                self.output_file_path, "wb"
+            ) as merged_file:
                 # Write OREAL header
                 merged_file.write(OREAL_COMPLETE_FILE_HEADER.encode("ascii"))
 
@@ -66,43 +61,29 @@ class Encoder:
                     merged_file.write(line)
 
                 # Check if WAV file exists
-                if os.path.exists(audio_file_path):
+                if os.path.exists(self.audio_file_path):
                     # Write separator
                     merged_file.write(b"\nAUDIO_START\n")
 
                     # Open and write audio content
-                    with wave.open(audio_file_path, "rb") as audio_file:
+                    with wave.open(self.audio_file_path, "rb") as audio_file:
                         merged_file.write(
                             audio_file.readframes(audio_file.getnframes())
                         )
 
-            return merged_file_path
+            return self.output_file_path
         except FileNotFoundError as e:
             print("File not found.", e)
             return None
 
     def decode(self):
-        merged_file_path = self.file_path.replace(
-            f".{OREAL_DEFAULT_VIDEO_EXT}", f".{OREAL_COMPLETE_AVI_FILE_EXT}"
-        )
 
         # Extract directory and base name from the merged file path
-        directory, base_name = os.path.split(merged_file_path)
-
-        # Construct the paths for decoded files
-        decoded_avi_file_path = os.path.join(
-            directory, f"{os.path.splitext(base_name)[0]}.{OREAL_DEFAULT_VIDEO_EXT}"
-        )
-        decoded_oreal_mouse_events_file_path = os.path.join(
-            directory, f"{os.path.splitext(base_name)[0]}.{OREAL_MOUSE_EVENT_EXT}"
-        )
-        decoded_audio_file_path = os.path.join(
-            directory, f"{os.path.splitext(base_name)[0]}.wav"
-        )
+        directory, base_name = os.path.split(self.audio_file_path)
 
         try:
             # Open the merged file for reading
-            with open(merged_file_path, "rb") as merged_file:
+            with open(self.audio_file_path, "rb") as merged_file:
                 # Check for OREAL header
                 header = merged_file.read(5)
                 if header != OREAL_COMPLETE_FILE_HEADER.encode("ascii"):
@@ -114,8 +95,8 @@ class Encoder:
                 audio_started = False
 
                 # Open files for writing decoded content
-                with open(decoded_avi_file_path, "wb") as avi_file, open(
-                    decoded_oreal_mouse_events_file_path, "wb"
+                with open(self.avi_file_path, "wb") as avi_file, open(
+                    self.mouse_events_file_path, "wb"
                 ) as oreal_mouse_event_file:
                     # Set audio parameters if audio content exists
                     audio_content_pos = None
@@ -139,7 +120,7 @@ class Encoder:
                         elif audio_started and audio_content_pos is not None:
                             # Open and write audio content if it exists
                             if audio_file is None:
-                                audio_file = wave.open(decoded_audio_file_path, "wb")
+                                audio_file = wave.open(self.audio_file_path, "wb")
                                 audio_file.setnchannels(2)  # Assuming stereo audio
                                 audio_file.setsampwidth(
                                     2
@@ -152,9 +133,9 @@ class Encoder:
                             break  # No need to read further after writing audio content
 
             return (
-                decoded_avi_file_path,
-                decoded_oreal_mouse_events_file_path,
-                decoded_audio_file_path if audio_content_pos is not None else None,
+                self.avi_file_path,
+                self.mouse_events_file_path,
+                self.audio_file_path if audio_content_pos is not None else None,
             )
         except FileNotFoundError as e:
             print("File not found.", e)

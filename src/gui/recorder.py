@@ -3,11 +3,22 @@ import tkinter as tk
 from tkinter import filedialog
 from threading import Thread
 import subprocess
-from src.constants import OREAL_APP_NAME, OREAL_WORKING_DIR
+from src.constants import (
+    OREAL_APP_NAME,
+    OREAL_WORKING_DIR,
+    OREAL_RECORDINGS_DIR,
+    RECORDER_GUI_NAME,
+    RECORDER_INPUT_FILENAME_TEXT,
+    RECORDER_AUDIO_CHECKBOX_TEXT,
+    RECORDER_RECORD_BUTTON_TEXT,
+    RECORDER_STOP_RECORDING_BUTTON_TEXT,
+    RECORDER_REPLAY_BUTTON_TEXT,
+    RECORDER_SAVE_BUTTON_TEXT,
+)
 from src.processors.encoder import Encoder
 from PIL import Image
 import time
-
+import os
 from src.processors.screen_recorder import ScreenRecorder
 
 
@@ -18,7 +29,7 @@ class ScreenRecorderGUI:
         self.screen_recorder = screen_recorder
         self.recording = False
         self.playing = False
-        self.master.title(f"{OREAL_APP_NAME} | Recorder")
+        self.master.title(RECORDER_GUI_NAME)
         self.master.resizable(False, False)
         self.max_live_preview_size = screen_recorder.max_size
 
@@ -37,7 +48,9 @@ class ScreenRecorderGUI:
         self.title_label.grid(row=0, column=0, columnspan=2, pady=(10, 10))
 
         # Name changer
-        self.name_label = ctk.CTkLabel(self.main_frame, text="File Name:")
+        self.name_label = ctk.CTkLabel(
+            self.main_frame, text=RECORDER_INPUT_FILENAME_TEXT
+        )
         self.name_label.grid(row=1, column=0, sticky="w", pady=20, padx=20)
         self.name_entry = ctk.CTkEntry(self.main_frame)
         self.name_entry.grid(row=1, column=1, pady=20, padx=20, sticky="ew")
@@ -46,7 +59,7 @@ class ScreenRecorderGUI:
         self.audio_var = ctk.BooleanVar(value=True)
         self.audio_checkbox = ctk.CTkCheckBox(
             self.main_frame,
-            text="Record Audio",
+            text=RECORDER_AUDIO_CHECKBOX_TEXT,
             variable=self.audio_var,
             font=("Arial", 12),
         )
@@ -71,7 +84,7 @@ class ScreenRecorderGUI:
         # Record button
         self.record_button = ctk.CTkButton(
             self.main_frame,
-            text="Record",
+            text=RECORDER_RECORD_BUTTON_TEXT,
             command=self.toggle_record,
             font=("Arial", 14),
         )
@@ -82,7 +95,7 @@ class ScreenRecorderGUI:
         # Replay button
         self.replay_button = ctk.CTkButton(
             self.main_frame,
-            text="Replay",
+            text=RECORDER_REPLAY_BUTTON_TEXT,
             command=self.replay,
             font=("Arial", 14),
         )
@@ -92,7 +105,7 @@ class ScreenRecorderGUI:
 
         self.compress_button = ctk.CTkButton(
             self.main_frame,
-            text="Compile",
+            text=RECORDER_SAVE_BUTTON_TEXT,
             command=self.compress,
             font=("Arial", 14),
         )
@@ -110,7 +123,7 @@ class ScreenRecorderGUI:
                 self.recording = True
                 self.record_thread = Thread(target=self.recording_thread)
                 self.record_thread.start()
-                self.record_button.configure(text="Stop Recording")
+                self.record_button.configure(text=RECORDER_STOP_RECORDING_BUTTON_TEXT)
                 self.tk_recording_frame.configure(text="Recording...")
 
         if not self.recording:
@@ -121,9 +134,8 @@ class ScreenRecorderGUI:
             self.screen_recorder.stop_recording()
             if self.record_thread.is_alive():
                 self.record_thread.join()
-                print("Recording stopped.")
             self.recording = False
-            self.record_button.configure(text="Record")
+            self.record_button.configure(text=RECORDER_RECORD_BUTTON_TEXT)
             self.compress_button.configure(state="normal")
 
     def recording_thread(self):
@@ -146,10 +158,10 @@ class ScreenRecorderGUI:
 
     def compress(self):
         def reset_compress_button():
-            self.compress_button.configure(text="Compile")
+            self.compress_button.configure(text=RECORDER_SAVE_BUTTON_TEXT)
 
         filename = self.name_entry.get() if self.name_entry.get() else "new_file"
-        encoder = Encoder(OREAL_WORKING_DIR + filename)
+        encoder = Encoder(OREAL_WORKING_DIR + filename, OREAL_RECORDINGS_DIR + filename)
         encoder.encode()
         self.compress_button.configure(state="disabled", text="Done")
         self.master.after(2000, reset_compress_button)
