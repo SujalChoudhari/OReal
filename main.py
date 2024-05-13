@@ -1,4 +1,11 @@
-from src.gui.app import OrealApp
+from app import Application
 
-app = OrealApp()
-app.run()
+
+def main() -> None:
+    app = Application()
+    app.start()
+    app.run()
+
+
+if __name__ == "__main__":
+    main()
