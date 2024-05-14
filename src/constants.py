@@ -18,6 +18,52 @@ RECORDER_RECORD_BUTTON_TEXT = "Record"
 RECORDER_STOP_RECORDING_BUTTON_TEXT = "Stop Recording"
 RECORDER_REPLAY_BUTTON_TEXT = "Replay"
 RECORDER_SAVE_BUTTON_TEXT = "Save"
+RECORDER_DEFAULT_NAME_PREFIX_POOL = [
+    "Wonderful",
+    "Amazing",
+    "Awesome",
+    "Fantastic",
+    "Better",
+    "Handsome",
+    "Lazy",
+    "Long",
+    "Nutty",
+    "Perfect",
+    "Ugliest",
+    "Wandering",
+    "Zealous",
+    "Worrisome",
+    "Sleepy",
+    "Smiling",
+    "Plain",
+]
+
+RECORDER_DEFAULT_NAME_SUFFIX_POOL = [
+    "Video",
+    "Tutorial",
+    "Recording",
+    "Record",
+    "Vid",
+    "Film",
+    "Recording",
+    "Tape",
+    "Clip",
+    "Flick",
+    "Reel",
+    "Videotape",
+    "Tape",
+    "Video",
+    "Televised",
+    "Canned",
+    "Prerecorded",
+    "Recorded",
+    "Taped",
+    "Telegenic",
+    "Footage",
+    "Clips",
+    "Visuals",
+    "Multimedia",
+]
 
 APP_MULTIPLE_INSTANCE_OF_RECORDER_MESSAGE = (
     "Recorder alreay open",

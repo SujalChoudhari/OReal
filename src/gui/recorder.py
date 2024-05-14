@@ -3,10 +3,12 @@ import tkinter as tk
 from tkinter import filedialog
 from threading import Thread
 import subprocess
+import random
 from src.constants import (
     OREAL_APP_NAME,
     OREAL_WORKING_DIR,
     OREAL_RECORDINGS_DIR,
+    OREAL_FILE_EXT,
     RECORDER_GUI_NAME,
     RECORDER_INPUT_FILENAME_TEXT,
     RECORDER_AUDIO_CHECKBOX_TEXT,
@@ -14,6 +16,8 @@ from src.constants import (
     RECORDER_STOP_RECORDING_BUTTON_TEXT,
     RECORDER_REPLAY_BUTTON_TEXT,
     RECORDER_SAVE_BUTTON_TEXT,
+    RECORDER_DEFAULT_NAME_PREFIX_POOL,
+    RECORDER_DEFAULT_NAME_SUFFIX_POOL,
 )
 from src.processors.encoder import Encoder
 from PIL import Image
@@ -53,6 +57,7 @@ class ScreenRecorderGUI:
         )
         self.name_label.grid(row=1, column=0, sticky="w", pady=20, padx=20)
         self.name_entry = ctk.CTkEntry(self.main_frame)
+        self.name_entry.insert(0, self.get_default_name())
         self.name_entry.grid(row=1, column=1, pady=20, padx=20, sticky="ew")
 
         # Audio selection
@@ -113,6 +118,17 @@ class ScreenRecorderGUI:
         self.compress_button.grid(
             row=6, column=0, columnspan=2, sticky="ew", padx=20, pady=(0, 20)
         )
+
+    def get_default_name(self):
+        name = random.choice(RECORDER_DEFAULT_NAME_PREFIX_POOL) + random.choice(
+            RECORDER_DEFAULT_NAME_SUFFIX_POOL
+        )
+        # check if exists in RECORDINGS oif yes, append another prefix.
+        while os.path.exists(
+            os.path.join(OREAL_RECORDINGS_DIR, name + "." + OREAL_FILE_EXT)
+        ):
+            name = random.choice(RECORDER_DEFAULT_NAME_PREFIX_POOL) + name
+        return name
 
     def toggle_record(self):
         def start_recording_after(i):
