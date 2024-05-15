@@ -24,16 +24,16 @@ class Encoder:
         self.output_directory = os.path.dirname(output_file_path)
 
         if output_file_path is None:
-            self.output_file_path = (
-                file_path + ""
+            self.output_file_path = file_path + (
+                ""
                 if output_file_path.endswith(OREAL_FILE_EXT)
-                else file_path + "." + OREAL_FILE_EXT
+                else "." + OREAL_FILE_EXT
             )
         else:
-            self.output_file_path = (
-                output_file_path + ""
+            self.output_file_path = output_file_path + (
+                ""
                 if output_file_path.endswith(OREAL_FILE_EXT)
-                else file_path + "." + OREAL_FILE_EXT
+                else "." + OREAL_FILE_EXT
             )
 
     def encode(self):
@@ -95,4 +95,3 @@ class Encoder:
             # Read and return the thumbnail image
             thumbnail_data = f_in.read(thumbnail_size)
             return Image.open(io.BytesIO(thumbnail_data))
-

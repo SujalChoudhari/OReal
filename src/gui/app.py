@@ -55,7 +55,62 @@ class OrealApp:
         )
         oreal_desc.pack(pady=10, side=tk.RIGHT, padx=10)
 
-        main_frame = ctk.CTkTabview(self.master)
+        def load_recordings(event=None):
+            if main_frame.get() != "Recordings":
+                return
+            # Clear previous content
+            for widget in recordings_frame.winfo_children():
+                widget.destroy()
+
+            # Add files from /recordings directory to the listbox
+            if os.path.exists(OREAL_RECORDINGS_DIR) and os.path.isdir(
+                OREAL_RECORDINGS_DIR
+            ):
+                row, col = 0, 0
+                for i, filename in enumerate(os.listdir(OREAL_RECORDINGS_DIR)):
+                    if filename.endswith(OREAL_FILE_EXT):
+                        row = i // 4  # Calculate row index
+                        col = i % 4  # Calculate column index
+
+                        decoder = Encoder(
+                            os.path.join(OREAL_RECORDINGS_DIR, filename),
+                            os.path.join(OREAL_RECORDINGS_DIR, filename),
+                        )
+                        image_content = decoder.get_thumbnail()
+
+                        frame = ctk.CTkFrame(recordings_frame)
+                        frame.grid(row=row, column=col, padx=5, pady=5)
+
+                        image = ctk.CTkLabel(
+                            frame,
+                            text="",
+                            corner_radius=50,
+                            image=ctk.CTkImage(
+                                light_image=image_content, size=(200, 150)
+                            ),
+                        )
+                        image.pack(side=tk.TOP, padx=5, pady=2)
+
+                        title = ctk.CTkLabel(
+                            frame,
+                            text=filename,
+                        )
+                        title.pack(side=tk.TOP, padx=5, pady=2)
+
+                        edit_button = ctk.CTkButton(
+                            frame,
+                            text="Edit",
+                            command=lambda f=filename: self.open_video_editor(f),
+                        )
+                        edit_button.pack(side=tk.TOP, padx=5, pady=2)
+
+                # Configure row and column weights to fill the entire space
+                for i in range(row + 1):  # Add 1 to row to account for 0-based indexing
+                    recordings_frame.grid_rowconfigure(i, weight=1)
+                for j in range(4):  # Assuming 4 columns
+                    recordings_frame.grid_columnconfigure(j, weight=1)
+
+        main_frame = ctk.CTkTabview(self.master, command=load_recordings)
         main_frame.add("Recordings")
         main_frame.add("Feed")
 
@@ -65,50 +120,7 @@ class OrealApp:
         recordings_frame = ctk.CTkScrollableFrame(main_frame.tab("Recordings"))
         recordings_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Add files from /recordings directory to the listbox
-        if os.path.exists(OREAL_RECORDINGS_DIR) and os.path.isdir(OREAL_RECORDINGS_DIR):
-            row, col = 0, 0
-            for i, filename in enumerate(os.listdir(OREAL_RECORDINGS_DIR)):
-                if filename.endswith(
-                    OREAL_FILE_EXT
-                ):  # Assuming you want to show only files with a specific extension
-                    row = i // 4  # Calculate row index
-                    col = i % 4  # Calculate column index
-
-                    decoder = Encoder(
-                        OREAL_RECORDINGS_DIR + filename, OREAL_RECORDINGS_DIR + filename
-                    )
-                    image_content = decoder.get_thumbnail()
-
-                    frame = ctk.CTkFrame(recordings_frame)
-                    frame.grid(row=row, column=col, padx=5, pady=5)
-
-                    image = ctk.CTkLabel(
-                        frame,
-                        text="",
-                        corner_radius=50,
-                        image=ctk.CTkImage(light_image=image_content, size=(200, 150)),
-                    )
-                    image.pack(side=tk.TOP, padx=5, pady=2)
-
-                    title = ctk.CTkLabel(
-                        frame,
-                        text=filename,
-                    )
-                    title.pack(side=tk.TOP, padx=5, pady=2)
-
-                    edit_button = ctk.CTkButton(
-                        frame,
-                        text="Edit",
-                        command=lambda f=filename: self.open_video_editor(f),
-                    )
-                    edit_button.pack(side=tk.TOP, padx=5, pady=2)
-
-            # Configure row and column weights to fill the entire space
-            for i in range(row + 1):  # Add 1 to row to account for 0-based indexing
-                recordings_frame.grid_rowconfigure(i, weight=1)
-            for j in range(4):  # Assuming 4 columns
-                recordings_frame.grid_columnconfigure(j, weight=1)
+        load_recordings()  # Initial load
 
         # Add projects tab
         main_frame.set("Feed")
