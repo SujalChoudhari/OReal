@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import colorchooser
 import customtkinter as ctk
 from tkinterweb import HtmlFrame
 import os
@@ -6,14 +7,13 @@ import os
 from src.processors.cursor_renderer import CursorRenderer
 from src.processors.mouse_event_recorder import MouseEventRecorder
 from src.processors.screen_recorder import ScreenRecorder
+# from src.processors.encoder import Decoder
 from src.constants import (
     OREAL_APP_NAME,
     OREAL_APP_DESCRIPTION,
     OREAL_FEED_WEB_PAGE,
     OREAL_RECORDINGS_DIR,
     OREAL_FILE_EXT,
-    APP_MULTIPLE_INSTANCE_OF_RECORDER_MESSAGE,
-    APP_MULTIPLE_INSTANCE_OF_VIDEO_EDITOR_MESSAGE,
 )
 from src.gui.recorder import ScreenRecorderGUI
 from src.gui.editor import VideoEditor
@@ -66,14 +66,19 @@ class OrealApp:
         recordings_frame.pack(fill=tk.BOTH, expand=True)
 
         # Add files from /recordings directory to the listbox
-        # Add files from /recordings directory to the listbox
         if os.path.exists(OREAL_RECORDINGS_DIR) and os.path.isdir(OREAL_RECORDINGS_DIR):
+            row, col = 0, 0
             for i, filename in enumerate(os.listdir(OREAL_RECORDINGS_DIR)):
                 if filename.endswith(
                     OREAL_FILE_EXT
                 ):  # Assuming you want to show only files with a specific extension
                     row = i // 4  # Calculate row index
                     col = i % 4  # Calculate column index
+
+                    # decoder = Decoder(OREAL_RECORDINGS_DIR + filename)
+                    image_content = decoder.get_thumbnail_content()
+
+                    print(image_content[:400])
 
                     frame = ctk.CTkFrame(recordings_frame)
                     frame.grid(row=row, column=col, padx=5, pady=5)

@@ -8,7 +8,9 @@ from src.constants import (
     OREAL_APP_NAME,
     OREAL_WORKING_DIR,
     OREAL_RECORDINGS_DIR,
+    OREAL_DEFAULT_VIDEO_EXT,
     OREAL_FILE_EXT,
+    OREAL_DEFAULT_THUMBNAIL_EXT,
     RECORDER_GUI_NAME,
     RECORDER_INPUT_FILENAME_TEXT,
     RECORDER_AUDIO_CHECKBOX_TEXT,
@@ -24,6 +26,7 @@ from PIL import Image
 import time
 import os
 from src.processors.screen_recorder import ScreenRecorder
+from src.processors.thumbnail import generate_thumbnail
 
 
 class ScreenRecorderGUI:
@@ -56,9 +59,22 @@ class ScreenRecorderGUI:
             self.main_frame, text=RECORDER_INPUT_FILENAME_TEXT
         )
         self.name_label.grid(row=1, column=0, sticky="w", pady=20, padx=20)
-        self.name_entry = ctk.CTkEntry(self.main_frame)
-        self.name_entry.insert(0, self.get_default_name())
+        self.filename_var = tk.StringVar()
+        self.filename_var.trace_add(
+            "write",
+            lambda name, index, mode, var=self.filename_var: self.on_file_name_input_change(
+                var
+            ),
+        )
+        self.name_entry = ctk.CTkEntry(self.main_frame, textvariable=self.filename_var)
         self.name_entry.grid(row=1, column=1, pady=20, padx=20, sticky="ew")
+        self.name_entry_error = ctk.CTkLabel(
+            self.main_frame,
+            text="",
+            font=("Arial", 12),
+            text_color="#ff9999",
+        )
+        self.name_entry_error.grid(row=2, column=1, columnspan=2, padx=20)
 
         # Audio selection
         self.audio_var = ctk.BooleanVar(value=True)
@@ -68,7 +84,7 @@ class ScreenRecorderGUI:
             variable=self.audio_var,
             font=("Arial", 12),
         )
-        self.audio_checkbox.grid(row=2, column=0, columnspan=2, sticky="w", padx=20)
+        self.audio_checkbox.grid(row=3, column=0, columnspan=2, sticky="w", padx=20)
 
         self.tk_recording_frame = ctk.CTkLabel(
             self.main_frame,
@@ -78,7 +94,7 @@ class ScreenRecorderGUI:
             height=self.max_live_preview_size[1],
         )
         self.tk_recording_frame.grid(
-            row=3,
+            row=4,
             column=0,
             columnspan=2,
             sticky="ew",
@@ -94,7 +110,7 @@ class ScreenRecorderGUI:
             font=("Arial", 14),
         )
         self.record_button.grid(
-            row=4, column=0, columnspan=2, sticky="ew", padx=20, pady=(20, 10)
+            row=5, column=0, columnspan=2, sticky="ew", padx=20, pady=(20, 10)
         )
 
         # Replay button
@@ -105,19 +121,33 @@ class ScreenRecorderGUI:
             font=("Arial", 14),
         )
         self.replay_button.grid(
-            row=5, column=0, columnspan=2, sticky="ew", padx=20, pady=(0, 20)
+            row=6, column=0, columnspan=2, sticky="ew", padx=20, pady=(0, 20)
         )
+        self.replay_button.configure(state="disabled")
 
         self.compress_button = ctk.CTkButton(
             self.main_frame,
             text=RECORDER_SAVE_BUTTON_TEXT,
-            command=self.compress,
+            command=self.save,
             font=("Arial", 14),
         )
         self.compress_button.configure(state="disabled")
         self.compress_button.grid(
-            row=6, column=0, columnspan=2, sticky="ew", padx=20, pady=(0, 20)
+            row=7, column=0, columnspan=2, sticky="ew", padx=20, pady=(0, 20)
         )
+
+        self.name_entry.insert(0, self.get_default_name())
+
+    def on_file_name_input_change(self, var):
+        name = var.get()
+        if os.path.exists(
+            os.path.join(OREAL_RECORDINGS_DIR, name + "." + OREAL_FILE_EXT)
+        ):
+            self.name_entry_error.configure(text="File already exists")
+            self.record_button.configure(state="disabled")
+        else:
+            self.name_entry_error.configure(text="")
+            self.record_button.configure(state="normal")
 
     def get_default_name(self):
         name = random.choice(RECORDER_DEFAULT_NAME_PREFIX_POOL) + random.choice(
@@ -131,6 +161,10 @@ class ScreenRecorderGUI:
         return name
 
     def toggle_record(self):
+        def create_thumbnail():
+            name = self.name_entry.get() + "." + OREAL_DEFAULT_THUMBNAIL_EXT
+            generate_thumbnail(name)
+
         def start_recording_after(i):
             if i > 0:
                 self.tk_recording_frame.configure(text=f"Recording in {i}")
@@ -141,9 +175,14 @@ class ScreenRecorderGUI:
                 self.record_thread.start()
                 self.record_button.configure(text=RECORDER_STOP_RECORDING_BUTTON_TEXT)
                 self.tk_recording_frame.configure(text="Recording...")
+                self.name_entry.configure(state="disabled")
+                self.master.after(2000, create_thumbnail)
 
         if not self.recording:
             start_recording_after(3)  # Start the countdown to record
+            # clear the working directory
+            for f in os.listdir(OREAL_WORKING_DIR):
+                os.remove(os.path.join(OREAL_WORKING_DIR, f))
             self.compress_button.configure(state="disabled")
         else:
             self.tk_recording_frame.configure(text="")
@@ -153,6 +192,11 @@ class ScreenRecorderGUI:
             self.recording = False
             self.record_button.configure(text=RECORDER_RECORD_BUTTON_TEXT)
             self.compress_button.configure(state="normal")
+
+            self.name_entry.configure(state="normal")
+            self.replay_button.configure(state="normal")
+            self.record_button.configure(state="disabled")
+            self.name_entry_error.configure(text="Name already exists.")
 
     def recording_thread(self):
         filename = self.name_entry.get() if self.name_entry.get() else "new_file"
@@ -172,12 +216,12 @@ class ScreenRecorderGUI:
         # Start video replay in a subprocess
         subprocess.Popen(["ffplay", "-autoexit", video_file])
 
-    def compress(self):
-        def reset_compress_button():
+    def save(self):
+        def reset_states():
             self.compress_button.configure(text=RECORDER_SAVE_BUTTON_TEXT)
 
         filename = self.name_entry.get() if self.name_entry.get() else "new_file"
         encoder = Encoder(OREAL_WORKING_DIR + filename, OREAL_RECORDINGS_DIR + filename)
         encoder.encode()
         self.compress_button.configure(state="disabled", text="Done")
-        self.master.after(2000, reset_compress_button)
+        self.master.after(2000, reset_states)
