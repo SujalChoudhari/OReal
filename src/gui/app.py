@@ -7,7 +7,7 @@ import os
 from src.processors.cursor_renderer import CursorRenderer
 from src.processors.mouse_event_recorder import MouseEventRecorder
 from src.processors.screen_recorder import ScreenRecorder
-# from src.processors.encoder import Decoder
+from src.processors.encoder import Encoder
 from src.constants import (
     OREAL_APP_NAME,
     OREAL_APP_DESCRIPTION,
@@ -75,15 +75,26 @@ class OrealApp:
                     row = i // 4  # Calculate row index
                     col = i % 4  # Calculate column index
 
-                    # decoder = Decoder(OREAL_RECORDINGS_DIR + filename)
-                    image_content = decoder.get_thumbnail_content()
-
-                    print(image_content[:400])
+                    decoder = Encoder(
+                        OREAL_RECORDINGS_DIR + filename, OREAL_RECORDINGS_DIR + filename
+                    )
+                    image_content = decoder.get_thumbnail()
 
                     frame = ctk.CTkFrame(recordings_frame)
                     frame.grid(row=row, column=col, padx=5, pady=5)
 
-                    title = ctk.CTkLabel(frame, text=filename)
+                    image = ctk.CTkLabel(
+                        frame,
+                        text="",
+                        corner_radius=50,
+                        image=ctk.CTkImage(light_image=image_content, size=(200, 150)),
+                    )
+                    image.pack(side=tk.TOP, padx=5, pady=2)
+
+                    title = ctk.CTkLabel(
+                        frame,
+                        text=filename,
+                    )
                     title.pack(side=tk.TOP, padx=5, pady=2)
 
                     edit_button = ctk.CTkButton(
