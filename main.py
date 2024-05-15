@@ -1,6 +1,7 @@
 from app import Application
 from src.processors.encoder import Encoder
 
+
 def main() -> None:
     app = Application()
     app.start()
@@ -8,5 +9,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    # main()
-    Encoder("recordings\FantasticVisuals","recordings\FantasticVisuals").decode()
+    main()
