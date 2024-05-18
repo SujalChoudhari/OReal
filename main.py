@@ -10,3 +10,5 @@ def main() -> None:
 if __name__ == "__main__":
     main()
     # Encoder("recordings\FantasticTelegenic","recordings\FantasticTelegenic").decode()
+
+

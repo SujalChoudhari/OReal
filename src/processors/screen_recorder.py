@@ -17,11 +17,9 @@ from src.constants import OREAL_DEFAULT_VIDEO_EXT, OREAL_WORKING_DIR
 class ScreenRecorder:
     def __init__(
         self,
-        cursor_renderer: CursorRenderer,
         mouse_event_recorder: MouseEventRecorder,
         max_preview_size=(400, 300),
     ):
-        self.cursor_renderer = cursor_renderer
         self.mouse_event_recorder = mouse_event_recorder
         self.screen_width, self.screen_height = pyautogui.size()
         self.fourcc = cv2.VideoWriter_fourcc(*"XVID")
@@ -82,7 +80,6 @@ class ScreenRecorder:
             while self.is_recording:
                 screenshot = pyautogui.screenshot()
                 frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
-                self.cursor_renderer.render_cursor(frame)
                 self.output_video.write(frame)
                 self.mouse_event_recorder.process_event_for_current_frame()
 
@@ -90,9 +87,6 @@ class ScreenRecorder:
                 pil_img = Image.fromarray(frame)
                 width, height = pil_img.size
                 ratio = min(self.max_size[0] / width, self.max_size[1] / height)
-                new_width = int(width * ratio)
-                new_height = int(height * ratio)
-                pil_img = pil_img.resize((new_width, new_height), Image.BICUBIC)
 
                 # Put the image into the queue
                 self.image_queue.put(pil_img)

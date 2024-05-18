@@ -172,13 +172,13 @@ class OrealApp:
 
     def open_video_editor(self, file_name):
         self.master.iconify()
-        self.video_editor = VideoEditor(master=self.master)
+        self.video_editor = VideoEditor(master=self.master, current_vid_path=file_name)
 
     def open_screen_recorder(self):
         self.master.iconify()
         self.recorder = ScreenRecorderGUI(
             self.master,
-            ScreenRecorder(CursorRenderer("assets/cursor.png"), MouseEventRecorder()),
+            ScreenRecorder(MouseEventRecorder()),
         )
 
     def run(self):
