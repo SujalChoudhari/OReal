@@ -8,6 +8,7 @@ from src.constants import (
     OREAL_DEFAULT_THUMBNAIL_EXT,
 )
 from src.processors.encoder import Encoder
+from src.processors.mouse_input_processor import MouseInputProcessor
 
 
 class VideoEditor:
@@ -44,6 +45,10 @@ class VideoEditor:
             OREAL_RECORDINGS_DIR + current_vid_path,
         )
         encoder.decode()
+
+        self.master.update()
+        self.preview_image(is_background=True, preset=self.selected_background)
+        self.preview_image(is_background=False, preset=self.selected_cursor)
 
     def create_ui(self):
         # App Name
@@ -95,11 +100,11 @@ class VideoEditor:
             label.bind(
                 "<Button-1>",
                 lambda event, image=preset_photo, is_background=is_background, preset=preset: self.preview_image(
-                    image, is_background, preset
+                    is_background, preset
                 ),
             )
 
-    def preview_image(self, image: ctk.CTkImage, is_background=True, preset=""):
+    def preview_image(self, is_background=True, preset=""):
         if is_background:
             self.selected_background = preset
         else:
@@ -162,5 +167,5 @@ class VideoEditor:
         self.background_preview_label.configure(image=display_image)
 
     def make_video(self):
-        # Implement functionality to make video
+        MouseInputProcessor().process_mouse_events()
         pass
