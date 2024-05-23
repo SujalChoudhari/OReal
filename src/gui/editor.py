@@ -1,7 +1,13 @@
-import tkinter as tk
+# /path/to/video_editor.py
+
 import os
+import tkinter as tk
 from PIL import Image
 import customtkinter as ctk
+import matplotlib
+from matplotlib import pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+
 from src.constants import (
     OREAL_WORKING_DIR,
     OREAL_RECORDINGS_DIR,
@@ -9,11 +15,8 @@ from src.constants import (
 )
 from src.processors.encoder import Encoder
 from src.processors.mouse_input_processor import MouseInputProcessor
-import matplotlib
-from matplotlib import pyplot as plt
 
 matplotlib.use("TkAgg")
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
 
 class VideoEditor:
@@ -24,47 +27,46 @@ class VideoEditor:
         self.master.geometry("1080x720")
         self.master.focus()
 
-        # Paths to preset backgrounds and cursors
         self.backgrounds_dir = "assets/backgrounds"
         self.cursors_dir = "assets/cursors"
         self.background_previews_dir = "assets/background_previews"
 
-        # Get preset backgrounds and cursors
         self.backgrounds = os.listdir(self.backgrounds_dir)
         self.cursors = os.listdir(self.cursors_dir)
 
-        # Variables to store selected background and cursor
         self.selected_background = self.backgrounds[0]
         self.selected_cursor = self.cursors[0]
         self.zoom_smoothness_variable = tk.IntVar(value=0)
         self.scale_smoothness_variable = tk.IntVar(value=0)
+        self.mouse_event_processor = MouseInputProcessor()
         self.create_ui()
 
-        # load the current video in working directory
         self.current_vid_path = current_vid_path
-        # clear the working directory
-        for f in os.listdir(OREAL_WORKING_DIR):
-            os.remove(os.path.join(OREAL_WORKING_DIR, f))
+        self.clear_working_directory()
 
         encoder = Encoder(
-            OREAL_WORKING_DIR + current_vid_path,
-            OREAL_RECORDINGS_DIR + current_vid_path,
+            os.path.join(OREAL_WORKING_DIR, current_vid_path),
+            os.path.join(OREAL_RECORDINGS_DIR, current_vid_path),
         )
         encoder.decode()
 
         self.master.update()
         self.preview_image(is_background=True, preset=self.selected_background)
         self.preview_image(is_background=False, preset=self.selected_cursor)
+        self.generate_background_zoom_graph()
+        self.generate_mouse_size_graph()
+
+    def clear_working_directory(self):
+        for f in os.listdir(OREAL_WORKING_DIR):
+            os.remove(os.path.join(OREAL_WORKING_DIR, f))
 
     def create_ui(self):
-        # App Name
         title_holder = ctk.CTkFrame(self.master)
         title_holder.pack(side=tk.TOP, fill=tk.X)
         ctk.CTkLabel(title_holder, text="Video Editor", font=("Arial", 14)).pack(
             side=tk.LEFT, padx=10, pady=10
         )
 
-        # Preview Area
         self.center_preview_area = ctk.CTkTabview(self.master)
         self.center_preview_area.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         self.center_preview_area.add("Preview")
@@ -72,74 +74,31 @@ class VideoEditor:
         self.center_preview_area.add("Screen Zoom Visualizer")
         self.center_preview_area.add("Generate Video")
 
-        # Make Button
-        self.generate_vide_frame = ctk.CTkFrame(
+        self.create_generate_video_tab()
+        self.create_preview_tab()
+        self.create_mouse_size_visualizer_tab()
+        self.create_screen_zoom_visualizer_tab()
+
+    def create_generate_video_tab(self):
+        self.generate_video_frame = ctk.CTkFrame(
             self.center_preview_area.tab("Generate Video")
         )
-        self.generate_vide_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-
+        self.generate_video_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         self.make_btn = ctk.CTkButton(
-            self.generate_vide_frame, text="Make", command=self.make_video
+            self.generate_video_frame, text="Make", command=self.make_video
         )
         self.make_btn.pack(side=tk.RIGHT, padx=10, pady=10)
 
-        # Preview Frame
+    def create_preview_tab(self):
         self.preview_area = ctk.CTkFrame(self.center_preview_area.tab("Preview"))
+        self.preview = ctk.CTkFrame(self.preview_area)
+        self.preview.pack(side=tk.RIGHT, expand=True, fill=tk.BOTH)
         self.preview_area.pack(side=tk.RIGHT, expand=True, fill=tk.BOTH)
-        self.preview_label = ctk.CTkLabel(self.preview_area, text="")
+        self.preview_label = ctk.CTkLabel(self.preview, text="")
         self.preview_label.pack(expand=True, fill=tk.BOTH)
 
-        # Mouse Size Visualizer Frame
-        self.mouse_size_visualizer = ctk.CTkFrame(
-            self.center_preview_area.tab("Mouse Size Visualizer")
-        )
-        self.mouse_size_visualizer.pack(side=tk.RIGHT, expand=True, fill=tk.BOTH)
-
-        self.scale_smoothness_input = ctk.CTkSlider(
-            self.mouse_size_visualizer,
-            from_=1,
-            to=100,
-            number_of_steps=100,
-            variable=self.scale_smoothness_variable,
-        )
-        self.scale_smoothness_input.pack(side=tk.TOP, padx=10, pady=10)
-        self.mouse_size_visualizer_label = ctk.CTkLabel(
-            self.mouse_size_visualizer, text="Click Make to preview"
-        )
-        self.mouse_size_visualizer_label.pack()
-
-        self.mouse_size_visualizer_graph = ctk.CTkFrame(
-            self.mouse_size_visualizer,
-        )
-        self.mouse_size_visualizer_graph.pack(expand=True, fill=tk.BOTH)
-
-        # Screen Zoom Visualizer Frame
-        self.screen_zoom_visualizer = ctk.CTkFrame(
-            self.center_preview_area.tab("Screen Zoom Visualizer")
-        )
-        self.screen_zoom_visualizer.pack(side=tk.RIGHT, expand=True, fill=tk.BOTH)
-
-        self.zoom_smoothness_input = ctk.CTkSlider(
-            self.screen_zoom_visualizer,
-            from_=1,
-            to=100,
-            number_of_steps=100,
-            variable=self.zoom_smoothness_variable,
-        )
-        self.zoom_smoothness_input.pack(side=tk.TOP, padx=10, pady=10)
-
-        self.screen_zoom_visualizer_label = ctk.CTkLabel(
-            self.screen_zoom_visualizer, text="Click Make to preview"
-        )
-        self.screen_zoom_visualizer_label.pack()
-        self.screen_zoom_visualizer_graph = ctk.CTkFrame(
-            self.screen_zoom_visualizer,
-        )
-        self.screen_zoom_visualizer_graph.pack(expand=True, fill=tk.BOTH)
-
-        # Sidebar - Preset Selector
-        self.pallet = ctk.CTkTabview(self.master)
-        self.pallet.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        self.pallet = ctk.CTkTabview(self.preview_area)
+        self.pallet.pack(side=tk.LEFT, fill=tk.BOTH, padx=10, pady=10)
         self.pallet.add("Background")
         self.pallet.add("Cursor")
 
@@ -147,6 +106,50 @@ class VideoEditor:
             self.background_previews_dir, "Background", self.backgrounds, True
         )
         self.create_preset_selector(self.cursors_dir, "Cursor", self.cursors, False)
+
+    def create_mouse_size_visualizer_tab(self):
+        self.mouse_size_visualizer = ctk.CTkFrame(
+            self.center_preview_area.tab("Mouse Size Visualizer")
+        )
+        self.mouse_size_visualizer.pack(side=tk.TOP, expand=True, fill=tk.BOTH)
+        self.mouse_size_visualizer_graph = ctk.CTkFrame(self.mouse_size_visualizer)
+        self.mouse_size_visualizer_graph.pack(expand=True, fill=tk.BOTH)
+
+        label_frame = ctk.CTkFrame(self.mouse_size_visualizer)
+        label_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=5)
+        ctk.CTkLabel(label_frame, text="Scale Smoothness").pack(side=tk.LEFT)
+
+        self.scale_smoothness_input = ctk.CTkSlider(
+            self.mouse_size_visualizer,
+            from_=1,
+            to=100,
+            number_of_steps=100,
+            variable=self.scale_smoothness_variable,
+            command=self.schedule_mouse_size_graph_update,
+        )
+        self.scale_smoothness_input.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
+
+    def create_screen_zoom_visualizer_tab(self):
+        self.screen_zoom_visualizer = ctk.CTkFrame(
+            self.center_preview_area.tab("Screen Zoom Visualizer")
+        )
+        self.screen_zoom_visualizer.pack(side=tk.TOP, expand=True, fill=tk.BOTH)
+        self.screen_zoom_visualizer_graph = ctk.CTkFrame(self.screen_zoom_visualizer)
+        self.screen_zoom_visualizer_graph.pack(expand=True, fill=tk.BOTH)
+
+        label_frame = ctk.CTkFrame(self.screen_zoom_visualizer)
+        label_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=5)
+        ctk.CTkLabel(label_frame, text="Zoom Smoothness").pack(side=tk.LEFT)
+
+        self.zoom_smoothness_input = ctk.CTkSlider(
+            self.screen_zoom_visualizer,
+            from_=1,
+            to=100,
+            number_of_steps=100,
+            variable=self.zoom_smoothness_variable,
+            command=self.schedule_background_zoom_graph_update,
+        )
+        self.zoom_smoothness_input.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
 
     def create_preset_selector(self, directory, title, presets, is_background=True):
         holder_frame = ctk.CTkScrollableFrame(self.pallet.tab(title))
@@ -183,13 +186,9 @@ class VideoEditor:
         new_cursor = Image.open(os.path.join(self.cursors_dir, self.selected_cursor))
 
         vid_thumbnail = Image.open(
-            OREAL_WORKING_DIR
-            + self.current_vid_path
-            + "."
-            + OREAL_DEFAULT_THUMBNAIL_EXT
+            f"{OREAL_WORKING_DIR}{self.current_vid_path}.{OREAL_DEFAULT_THUMBNAIL_EXT}"
         )
 
-        # Resize video thumbnail while preserving aspect ratio
         vid_thumbnail = vid_thumbnail.resize(
             (
                 int(new_background.size[0] * 0.8),
@@ -197,28 +196,22 @@ class VideoEditor:
             ),
         )
 
-        # Scale the cursor to 1/5 of the background height
         cursor_height = new_background.size[1] // 4
         cursor_width = new_background.size[1] // 4
-        new_cursor = new_cursor.resize(
-            (cursor_width, cursor_height),
-        )
+        new_cursor = new_cursor.resize((cursor_width, cursor_height))
 
-        # Paste the thumbnail on the background (right in center)
         paste_position = (
             new_background.size[0] // 2 - vid_thumbnail.size[0] // 2,
             new_background.size[1] // 2 - vid_thumbnail.size[1] // 2,
         )
         new_background.paste(vid_thumbnail, paste_position)
 
-        # Render cursor on image in bottom right corner with some padding
         cursor_position = (
             new_background.size[0] - new_cursor.size[0] - 150 * 16 // 9,
             new_background.size[1] - new_cursor.size[1] - 150,
         )
         new_background.paste(new_cursor, cursor_position, new_cursor)
 
-        # Resize the background image to fit the preview label
         new_background = new_background.resize(
             (
                 self.preview_label.winfo_height() * 16 // 9 // 2,
@@ -226,7 +219,6 @@ class VideoEditor:
             ),
         )
 
-        # Display the updated background image
         display_image = ctk.CTkImage(
             light_image=new_background,
             size=(
@@ -236,36 +228,68 @@ class VideoEditor:
         )
         self.preview_label.configure(image=display_image)
 
-    def draw_line_graph(self, root: ctk.CTkFrame, data: list[float]):
-        # Create a Matplotlib figure and axis
-        fig, ax = plt.subplots(figsize=(4, 3))
+    def draw_line_graph(self, root: ctk.CTkFrame, data: list[float], smoothness: int):
+        plt.close("all")
+        fig, ax = plt.subplots(figsize=(4, 5))
+        fig.patch.set_facecolor("#2b2b2b")
+        ax.set_facecolor("#2b2b2b")
 
-        # Plot the line graph
-        ax.plot(data, marker="o", color="blue", linestyle="-")
+        ax.plot(data, marker="o", color="cyan", linestyle="-")
+        ax.set_xlabel("Frame Count", color="white")
+        ax.set_ylabel("Value", color="white")
+        ax.set_title(
+            f"Smoothness Graph ({(smoothness * smoothness / 100):.2f} units)",
+            color="white",
+        )
 
-        # Set labels and title
-        ax.set_xlabel("Frame Count")
-        ax.set_ylabel("Value")
-        ax.set_title("Smoothness Graph")
+        ax.tick_params(axis="x", colors="white")
+        ax.tick_params(axis="y", colors="white")
+        ax.spines["bottom"].set_color("white")
+        ax.spines["top"].set_color("white")
+        ax.spines["left"].set_color("white")
+        ax.spines["right"].set_color("white")
 
-        # remove all the childs of root before appending
         for widget in root.winfo_children():
             widget.destroy()
-        # Create a Tkinter-compatible canvas
+
         canvas = FigureCanvasTkAgg(fig, master=root)
         canvas.draw()
 
         toolbar = NavigationToolbar2Tk(canvas, root)
         toolbar.update()
-        canvas.get_tk_widget().pack(expand=True, fill=tk.BOTH)
+        toolbar.config(background="#2e2e2e")
+        canvas.get_tk_widget().pack(fill=tk.BOTH)
 
-    def make_video(self):
-        (
-            screen_zoom_array,
-            mouse_zoom_array,
-        ) = MouseInputProcessor().process_mouse_events(
-            zoom_smoothness=self.zoom_smoothness_variable.get(),
-            scale_smoothness=self.scale_smoothness_variable.get(),
+    def make_video(self): ...
+
+    def generate_background_zoom_graph(self):
+        data = self.mouse_event_processor.generate_zooming_values(
+            self.zoom_smoothness_variable.get()
         )
-        self.draw_line_graph(self.mouse_size_visualizer_graph, mouse_zoom_array)
-        self.draw_line_graph(self.screen_zoom_visualizer_graph, screen_zoom_array)
+
+        self.draw_line_graph(
+            self.screen_zoom_visualizer_graph, data, self.zoom_smoothness_variable.get()
+        )
+
+    def generate_mouse_size_graph(self):
+        data = self.mouse_event_processor.generate_mouse_size_values(
+            self.scale_smoothness_variable.get()
+        )
+
+        self.draw_line_graph(
+            self.mouse_size_visualizer_graph, data, self.scale_smoothness_variable.get()
+        )
+
+    def schedule_background_zoom_graph_update(self, _):
+        if hasattr(self, "background_zoom_graph_update_id"):
+            self.master.after_cancel(self.background_zoom_graph_update_id)
+        self.background_zoom_graph_update_id = self.master.after(
+            200, self.generate_background_zoom_graph
+        )
+
+    def schedule_mouse_size_graph_update(self, _):
+        if hasattr(self, "mouse_size_graph_update_id"):
+            self.master.after_cancel(self.mouse_size_graph_update_id)
+        self.mouse_size_graph_update_id = self.master.after(
+            200, self.generate_mouse_size_graph
+        )

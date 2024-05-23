@@ -4,10 +4,36 @@ from src.constants import OREAL_MOUSE_EVENT_EXT, OREAL_WORKING_DIR
 
 class MouseInputProcessor:
 
-    MAX_ZOOM_AMOUNT = 2.0
-    ZOOM_INCREMENTER = 0.1
+    def __init__(self) -> None:
+        self.MAX_ZOOM_AMOUNT = 2.0
+        self.zoom_array = []
+        self.scaled_array = []
+        self.parts = []
 
-    def get_mouse_event_file_contents(self):
+    def generate_zooming_values(self, smoothness=10):
+        parts = self._parse_mouse_event_file()
+        clicks = [x[3] for x in parts]
+        self.zoom_array = self._process_zoom_level(
+            clicks, smoothness=smoothness * smoothness // 100
+        )  # parabolic curve
+        return self.zoom_array
+
+    def generate_mouse_size_values(self, smoothness=10):
+        parts = self._parse_mouse_event_file()
+        cords = [(float(x[1]), float(x[2])) for x in parts]
+        self.scaled_array = self._process_mouse_size(
+            cords, smoothness=smoothness * smoothness // 100
+        )  # parabolic curve
+        return self.scaled_array
+
+    def save_to_file(self):
+        self._clear_file()
+        # iter over parts, zoom array and scaled array
+        for i in range(len(self.parts)):
+            line = f"{self.parts[i][0]} {self.parts[i][1]} {self.parts[i][2]} {self.parts[i][2]} {self.zoom_array[i]} {self.scaled_array[i]}\n"
+            self._append_to_file(line)
+
+    def _get_mouse_event_file_contents(self):
         try:
             filename = next(
                 x
@@ -20,13 +46,14 @@ class MouseInputProcessor:
         with open(os.path.join(OREAL_WORKING_DIR, filename), "r") as f:
             return f.read()
 
-    def parse_mouse_event_file(self):
-        content = self.get_mouse_event_file_contents()
+    def _parse_mouse_event_file(self):
+        content = self._get_mouse_event_file_contents()
         lines = content.split("\n")
         parts = [x.strip().split() for x in lines if x.strip()]
+        self.parts = parts
         return parts
 
-    def clear_file(self):
+    def _clear_file(self):
         try:
             filename = next(
                 x
@@ -39,7 +66,7 @@ class MouseInputProcessor:
         with open(os.path.join(OREAL_WORKING_DIR, filename), "w") as f:
             f.write("")
 
-    def append_to_file(self, line: str):
+    def _append_to_file(self, line: str):
         try:
             filename = next(
                 x
@@ -52,53 +79,39 @@ class MouseInputProcessor:
         with open(os.path.join(OREAL_WORKING_DIR, filename), "a") as f:
             f.write(line)
 
-    def process_mouse_events(self, zoom_smoothness=10,scale_smoothness=10):
-        parts = self.parse_mouse_event_file()
-        # remove the 4 and 5th column if present
-        for i in range(len(parts)):
-            if len(parts[i]) > 5:
-                parts[i].pop(4)
-                parts[i].pop(4)
-            elif len(parts[i]) > 4:
-                parts[i].pop(4)
-
-        self.process_zoom_level(parts, smoothness=zoom_smoothness)
-        self.process_mouse_size(parts, smoothness=scale_smoothness)
-        mouse_size_array = [float(x[5]) for x in parts]
-        zoom_level_array = [float(x[4]) for x in parts]
-        self.clear_file()
-
-        for line in parts:
-            self.append_to_file(
-                f"{line[0]} {line[1]} {line[2]} {line[3]} {line[4]} {line[5]}\n"
-            )
-
-        return zoom_level_array, mouse_size_array
-
-    def process_zoom_level(self, parts, smoothness=10):
-        for i in range(len(parts)):
-            if parts[i][3] == "True":
-                parts[i].append(self.MAX_ZOOM_AMOUNT)
+    def _process_zoom_level(self, clicks: list[str], smoothness=10) -> list[float]:
+        zoom = []
+        for i in range(len(clicks)):
+            if clicks[i] == "True":
+                zoom.append(self.MAX_ZOOM_AMOUNT)
             else:
-                parts[i].append(1)
+                zoom.append(1)
 
-        self.smooth_values(parts, index=4, smoothness=smoothness)
+        zoom[0] = 1
+        zoom[-1] = 1
 
-    def process_mouse_size(self, parts, smoothness=10):
-        for i in range(len(parts)):
-            velocity_x = float(parts[i][1]) - (float(parts[i - 1][1]) if i > 0 else 0)
-            velocity_y = float(parts[i][2]) - (float(parts[i - 1][2]) if i > 0 else 0)
+        return self._smooth_values(zoom, smoothness=smoothness)
+
+    def _process_mouse_size(
+        self, cords: tuple[float, float], smoothness=10
+    ) -> list[float]:
+        sizes = []
+        for i in range(len(cords)):
+            velocity_x = float(cords[i][0]) - (float(cords[i - 1][0]) if i > 0 else 0)
+            velocity_y = float(cords[i][1]) - (float(cords[i - 1][1]) if i > 0 else 0)
             velocity = (velocity_x**2 + velocity_y**2) ** 0.5
             velocity = min(1 / velocity if velocity > 0 else 0, 1)
 
             size = 1 + velocity * self.MAX_ZOOM_AMOUNT
-            parts[i].append(size)
-        parts[0][3] = "False"
-        parts[-1][3] = "False"
+            sizes.append(size)
 
-        self.smooth_values(parts, index=5, smoothness=smoothness)
-    def smooth_values(self, parts, index, smoothness):
-        smoothed_values = [float(part[index]) for part in parts]  # Initialize with original values
+        sizes[0] = 1
+        sizes[-1] = 1
+
+        return self._smooth_values(sizes, smoothness=smoothness)
+
+    def _smooth_values(self, array: list[float], smoothness) -> list[float]:
+        smoothed_values = [float(a) for a in array]  # Initialize with original values
 
         for _ in range(int(smoothness)):
             new_smoothed_values = smoothed_values.copy()
@@ -119,7 +132,8 @@ class MouseInputProcessor:
         max_value = max(smoothed_values)
         min_value = min(smoothed_values)
         scale_factor = (2.0 - 1.0) / (max_value - min_value)
-        scaled_smoothed_values = [1.0 + (value - min_value) * scale_factor for value in smoothed_values]
+        scaled_smoothed_values = [
+            1.0 + (value - min_value) * scale_factor for value in smoothed_values
+        ]
 
-        for i in range(len(parts)):
-            parts[i][index] = str(scaled_smoothed_values[i])
+        return scaled_smoothed_values
