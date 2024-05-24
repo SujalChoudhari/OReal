@@ -12,9 +12,13 @@ from src.constants import (
     OREAL_WORKING_DIR,
     OREAL_RECORDINGS_DIR,
     OREAL_DEFAULT_THUMBNAIL_EXT,
+    OREAL_BACKGROUNDS_DIR,
+    OREAL_CURSOR_DIR,
+    OREAL_BACKGROUND_PREVIEWS_DIR,
 )
 from src.processors.encoder import Encoder
 from src.processors.mouse_input_processor import MouseInputProcessor
+from src.processors.make_video import make_video
 
 matplotlib.use("TkAgg")
 
@@ -27,9 +31,9 @@ class VideoEditor:
         self.master.geometry("1080x720")
         self.master.focus()
 
-        self.backgrounds_dir = "assets/backgrounds"
-        self.cursors_dir = "assets/cursors"
-        self.background_previews_dir = "assets/background_previews"
+        self.backgrounds_dir = OREAL_BACKGROUNDS_DIR
+        self.cursors_dir = OREAL_CURSOR_DIR
+        self.background_previews_dir = OREAL_BACKGROUND_PREVIEWS_DIR
 
         self.backgrounds = os.listdir(self.backgrounds_dir)
         self.cursors = os.listdir(self.cursors_dir)
@@ -84,10 +88,21 @@ class VideoEditor:
             self.center_preview_area.tab("Generate Video")
         )
         self.generate_video_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-        self.make_btn = ctk.CTkButton(
-            self.generate_video_frame, text="Make", command=self.make_video
+        self.save_smoothness_parameter_button = ctk.CTkButton(
+            self.generate_video_frame,
+            text="Save Smoothness Parameters",
+            command=self.save_smoothness_parameter,
         )
-        self.make_btn.pack(side=tk.RIGHT, padx=10, pady=10)
+        self.save_smoothness_parameter_button.pack(side=tk.TOP, padx=10, pady=10)
+        self.make_btn = ctk.CTkButton(
+            self.generate_video_frame,
+            text="Make",
+            command=lambda: make_video(self.selected_background, self.selected_cursor),
+        )
+        self.make_btn.pack(side=tk.TOP, padx=10, pady=10)
+
+    def save_smoothness_parameter(self):
+        self.mouse_event_processor.save_to_file()
 
     def create_preview_tab(self):
         self.preview_area = ctk.CTkFrame(self.center_preview_area.tab("Preview"))
@@ -234,7 +249,7 @@ class VideoEditor:
         fig.patch.set_facecolor("#2b2b2b")
         ax.set_facecolor("#2b2b2b")
 
-        ax.plot(data, marker="o", color="cyan", linestyle="-")
+        ax.plot(data, color="cyan", linestyle="-")
         ax.set_xlabel("Frame Count", color="white")
         ax.set_ylabel("Value", color="white")
         ax.set_title(
@@ -259,8 +274,6 @@ class VideoEditor:
         toolbar.update()
         toolbar.config(background="#2e2e2e")
         canvas.get_tk_widget().pack(fill=tk.BOTH)
-
-    def make_video(self): ...
 
     def generate_background_zoom_graph(self):
         data = self.mouse_event_processor.generate_zooming_values(

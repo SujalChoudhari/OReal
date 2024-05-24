@@ -30,7 +30,7 @@ class MouseInputProcessor:
         self._clear_file()
         # iter over parts, zoom array and scaled array
         for i in range(len(self.parts)):
-            line = f"{self.parts[i][0]} {self.parts[i][1]} {self.parts[i][2]} {self.parts[i][2]} {self.zoom_array[i]} {self.scaled_array[i]}\n"
+            line = f"{self.parts[i][0]} {self.parts[i][1]} {self.parts[i][2]} {self.parts[i][3]} {self.zoom_array[i]} {self.scaled_array[i]}\n"
             self._append_to_file(line)
 
     def _get_mouse_event_file_contents(self):

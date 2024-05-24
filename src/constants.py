@@ -17,6 +17,9 @@ OREAL_HEADER_THUMBNAIL_CONTENT = "THUMBNAIL"
 
 OREAL_WORKING_DIR = "working/"
 OREAL_RECORDINGS_DIR = "recordings/"
+OREAL_CURSOR_DIR = "assets/cursors/"
+OREAL_BACKGROUNDS_DIR = "assets/backgrounds/"
+OREAL_BACKGROUND_PREVIEWS_DIR = "assets/background_previews/"
 
 EDITOR_GUI_NAME = f"{OREAL_APP_NAME} | Editor"
 
