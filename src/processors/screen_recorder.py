@@ -7,12 +7,12 @@ import threading
 import tkinter as tk
 import customtkinter as ctk
 import queue
+import time
 from PIL import Image
 
-from src.processors.cursor_renderer import CursorRenderer
+from src.processors.cursor_renderer import CursorRenderer  # Assuming these imports are necessary
 from src.processors.mouse_event_recorder import MouseEventRecorder
 from src.constants import OREAL_DEFAULT_VIDEO_EXT, OREAL_WORKING_DIR
-
 
 class ScreenRecorder:
     def __init__(
@@ -37,8 +37,9 @@ class ScreenRecorder:
         self.output_file_name = (
             OREAL_WORKING_DIR + out_file_name + "." + OREAL_DEFAULT_VIDEO_EXT
         )
+        self.temp_output_file_name = self.output_file_name.replace(f".{OREAL_DEFAULT_VIDEO_EXT}", "_temp.avi")
         self.output_video = cv2.VideoWriter(
-            self.output_file_name,
+            self.temp_output_file_name,
             self.fourcc,
             20.0,
             (self.screen_width, self.screen_height),
@@ -70,6 +71,7 @@ class ScreenRecorder:
         self.is_recording = False
 
     def record(self):
+        self.start_time = time.time()  # Start timing
         self.update_tkinter()
         if self.record_audio:
             self.audio_frames = []
@@ -92,6 +94,7 @@ class ScreenRecorder:
                 self.image_queue.put(pil_img)
 
         finally:
+            self.end_time = time.time()  # End timing
             if self.record_audio:
                 audio_thread.join()
                 self.audio_stream.stop_stream()
@@ -108,6 +111,8 @@ class ScreenRecorder:
             self.mouse_event_recorder.dump_events(filename=self.output_file_name)
             self.output_video.release()
 
+            self.adjust_video_frame_rate()
+
     def update_tkinter(self):
         try:
             # Get an image from the queue
@@ -122,6 +127,34 @@ class ScreenRecorder:
 
         # Schedule the next update after a short delay
         self.tk_frame.after(10, self.update_tkinter)
+
+    def adjust_video_frame_rate(self):
+        actual_duration = self.end_time - self.start_time
+        original_frame_rate = 20.0
+
+        # Open the temporary video file
+        cap = cv2.VideoCapture(self.temp_output_file_name)
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+        # Calculate the new frame rate
+        new_frame_rate = total_frames / actual_duration
+
+        # Create a new video writer for the final output file
+        out = cv2.VideoWriter(
+            self.output_file_name,
+            self.fourcc,
+            new_frame_rate,
+            (self.screen_width, self.screen_height),
+        )
+
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            out.write(frame)
+
+        cap.release()
+        out.release()
 
     def get_record_audio(self):
         return self.record_audio
