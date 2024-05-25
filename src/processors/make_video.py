@@ -1,12 +1,13 @@
 from src.constants import (
     OREAL_DEFAULT_VIDEO_EXT,
     OREAL_MOUSE_EVENT_EXT,
+    OREAL_DEFAULT_AUDIO_EXT,
     OREAL_BACKGROUNDS_DIR,
     OREAL_CURSOR_DIR,
     OREAL_WORKING_DIR,
 )
 
-from moviepy.editor import ImageClip, VideoFileClip, CompositeVideoClip
+from moviepy.editor import ImageClip, VideoFileClip, CompositeVideoClip, AudioFileClip
 import pandas as pd
 from tkinter import filedialog
 import os
@@ -25,6 +26,20 @@ def make_video(background: str, cursor: str):
             if x.endswith(OREAL_MOUSE_EVENT_EXT)
         ),
     )
+
+    # Open audio file from the working directory, if it exists
+    try:
+        audio_path = os.path.join(
+            OREAL_WORKING_DIR,
+            next(
+                x
+                for x in os.listdir(OREAL_WORKING_DIR)
+                if x.endswith(OREAL_DEFAULT_AUDIO_EXT)
+            ),
+        )
+        audio_exists = True
+    except StopIteration:
+        audio_exists = False
 
     avi_path = os.path.join(
         OREAL_WORKING_DIR,
@@ -61,7 +76,9 @@ def make_video(background: str, cursor: str):
             x - cursor_image.w * scale / 2,
             y - cursor_image.h * scale / 2,
         )
-        positioned_cursor_image = cursor_image.set_position(cursor_position).resize(scale)
+        positioned_cursor_image = cursor_image.set_position(cursor_position).resize(
+            scale
+        )
 
         # Overlay the cursor on the frame
         vid_with_cursor = CompositeVideoClip([frame_clip, positioned_cursor_image])
@@ -80,7 +97,11 @@ def make_video(background: str, cursor: str):
         )
 
         # Scale the frame and reposition it
-        zoomed_vid_with_cursor = ImageClip(vid_with_cursor.get_frame(0)).resize(zoom_factor).set_position(video_pos)
+        zoomed_vid_with_cursor = (
+            ImageClip(vid_with_cursor.get_frame(0))
+            .resize(zoom_factor)
+            .set_position(video_pos)
+        )
 
         # Calculate the centered position of the video on the background
         final_video_pos = (
@@ -98,6 +119,11 @@ def make_video(background: str, cursor: str):
 
     # Create the final video with the cursor overlay and centered on the background
     final_video = video.fl(process_frame)
+
+    # Add audio if it exists
+    if audio_exists:
+        audio = AudioFileClip(audio_path)
+        final_video = final_video.set_audio(audio)
 
     output_path = filedialog.asksaveasfilename(
         title="Save Video As",

@@ -5,7 +5,7 @@ from src.constants import OREAL_MOUSE_EVENT_EXT, OREAL_WORKING_DIR
 class MouseInputProcessor:
 
     def __init__(self) -> None:
-        self.MAX_ZOOM_AMOUNT = 2.0
+        self.MAX_ZOOM_AMOUNT = 1.3
         self.zoom_array = []
         self.scaled_array = []
         self.parts = []
@@ -131,7 +131,7 @@ class MouseInputProcessor:
         # Scale the final output to ensure the highest point is at 2.0 and the lowest is at 1.0
         max_value = max(smoothed_values)
         min_value = min(smoothed_values)
-        scale_factor = (2.0 - 1.0) / (max_value - min_value)
+        scale_factor = (self.MAX_ZOOM_AMOUNT - 1.0) / (max_value - min_value)
         scaled_smoothed_values = [
             1.0 + (value - min_value) * scale_factor for value in smoothed_values
         ]

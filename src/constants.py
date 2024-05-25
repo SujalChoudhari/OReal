@@ -1,7 +1,7 @@
 OREAL_APP_NAME = "OReal"
 OREAL_APP_DESCRIPTION = "OReal is a tool for recording top notch Video Tutorials."
 
-OREAL_FEED_WEB_PAGE = "https://www.example.com"
+OREAL_FEED_WEB_PAGE = "https://sujal.xyz"
 OREAL_COMPLETE_FILE_HEADER = "OREAL"
 
 OREAL_MOUSE_EVENT_EXT = "orme"
